@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+/* 
+  Pemindaian Direktori (Path relatif terhadap resources/css/app.css)
+*/
+/* 1. Komponen Pagination bawaan Laravel */
+@source "../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php";
+/* 2. File view cache (opsional, tapi berguna jika ada kelas dinamis yang di-render PHP) */
+@source "../../storage/framework/views/*.php";
+/* 3. Semua file Blade di dalam folder views */
+@source "../views/**/*.blade.php";
+/* 4. Semua file JS di dalam folder js (diperluas berjaga-jaga jika menggunakan modul tambahan) */
+@source "../js/**/*.{js,ts}";
+
+@theme {
+    /* Konfigurasi Font Custom */
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, -apple-system, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+/* PROAKTIF: Fundamental UI (Glassmorphism & Light Theme Preparation) */
+@layer base {
+    :root {
+        /* Memaksa browser ke mode terang, mencegah OS memaksakan dark-theme yang merusak desain */
+        color-scheme: light; 
+    }
+
+    body {
+        /* Base yang bersih untuk gaya minimalis dengan transisi mulus */
+        @apply antialiased text-gray-900 bg-slate-50;
+    }
+}
