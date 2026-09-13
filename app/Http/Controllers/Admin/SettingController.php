@@ -35,13 +35,9 @@ class SettingController extends Controller
 
         $setting = Setting::first() ?? new Setting();
 
-        // Upload file PDF baru menggantikan resume_link (baik link lama berupa
-        // URL maupun path storage lama akan ditimpa oleh path file baru).
         if ($request->hasFile('resume')) {
-            if ($setting->resume_link && ! filter_var($setting->resume_link, FILTER_VALIDATE_URL)) {
-                Storage::disk('public')->delete($setting->resume_link);
-            }
-            $validated['resume_link'] = $request->file('resume')->store('resumes', 'public');
+            $uploaded = $request->file('resume')->storePublicly('resumes', 'cloudinary');
+            $validated['resume_link'] = Storage::disk('cloudinary')->url($uploaded);
         }
 
         unset($validated['resume']);

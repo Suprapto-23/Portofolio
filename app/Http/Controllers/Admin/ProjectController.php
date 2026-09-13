@@ -12,7 +12,6 @@ class ProjectController extends Controller
 {
     public function index()
     {
-        // Menampilkan proyek terbaru dengan pagination agar query tidak berat
         $projects = Project::latest()->paginate(10);
         return view('admin.projects.index', compact('projects'));
     }
@@ -32,25 +31,22 @@ class ProjectController extends Controller
             'client_name' => 'nullable|string|max:255',
             'project_url' => 'nullable|url|max:255',
             'repository_url' => 'nullable|url|max:255',
-            'cover_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048', // Batas 2MB, format modern
+            'cover_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'is_published' => 'boolean',
         ]);
 
-        // Generate slug dari title
         $validated['slug'] = Str::slug($request->title);
 
-        // Cek keunikan slug (kasus ekstrem jika nama project sama)
         if (Project::where('slug', $validated['slug'])->exists()) {
             $validated['slug'] = $validated['slug'] . '-' . time();
         }
 
-        // Handle File Upload
+        // Upload ke Cloudinary, hasilnya berupa URL lengkap
         if ($request->hasFile('cover_image')) {
-            $path = $request->file('cover_image')->store('projects', 'public');
-            $validated['cover_image'] = $path;
+            $uploaded = $request->file('cover_image')->storePublicly('projects', 'cloudinary');
+            $validated['cover_image'] = Storage::disk('cloudinary')->url($uploaded);
         }
 
-        // Checkbox penanganan default (jika tidak dicentang, nilainya false)
         $validated['is_published'] = $request->has('is_published');
 
         Project::create($validated);
@@ -77,7 +73,6 @@ class ProjectController extends Controller
             'cover_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
-        // Cek update slug manual jika judul berubah
         $newSlug = Str::slug($request->title);
         if ($project->slug !== $newSlug) {
             if (Project::where('slug', $newSlug)->where('id', '!=', $project->id)->exists()) {
@@ -87,12 +82,9 @@ class ProjectController extends Controller
             }
         }
 
-        // Handle penggantian gambar dan hapus gambar lama dari disk
         if ($request->hasFile('cover_image')) {
-            if ($project->cover_image && Storage::disk('public')->exists($project->cover_image)) {
-                Storage::disk('public')->delete($project->cover_image);
-            }
-            $validated['cover_image'] = $request->file('cover_image')->store('projects', 'public');
+            $uploaded = $request->file('cover_image')->storePublicly('projects', 'cloudinary');
+            $validated['cover_image'] = Storage::disk('cloudinary')->url($uploaded);
         }
 
         $validated['is_published'] = $request->has('is_published');
@@ -103,10 +95,6 @@ class ProjectController extends Controller
                          ->with('success', 'Proyek berhasil diperbarui.');
     }
 
-    /**
-     * Aktifkan/nonaktifkan publikasi proyek langsung dari daftar,
-     * tanpa perlu membuka halaman edit.
-     */
     public function togglePublish(Project $project)
     {
         $project->update(['is_published' => ! $project->is_published]);
@@ -119,11 +107,6 @@ class ProjectController extends Controller
 
     public function destroy(Project $project)
     {
-        // Hapus file fisik sebelum menghapus data database
-        if ($project->cover_image && Storage::disk('public')->exists($project->cover_image)) {
-            Storage::disk('public')->delete($project->cover_image);
-        }
-
         $project->delete();
 
         return redirect()->route('admin.projects.index')

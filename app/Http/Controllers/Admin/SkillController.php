@@ -31,7 +31,8 @@ class SkillController extends Controller
         $validated = $this->validated($request);
 
         if ($request->hasFile('icon')) {
-            $validated['icon_path'] = $request->file('icon')->store('skills', 'public');
+            $uploaded = $request->file('icon')->storePublicly('skills', 'cloudinary');
+            $validated['icon_path'] = Storage::disk('cloudinary')->url($uploaded);
         }
 
         Skill::create($validated);
@@ -56,10 +57,8 @@ class SkillController extends Controller
         $validated = $this->validated($request);
 
         if ($request->hasFile('icon')) {
-            if ($skill->icon_path) {
-                Storage::disk('public')->delete($skill->icon_path);
-            }
-            $validated['icon_path'] = $request->file('icon')->store('skills', 'public');
+            $uploaded = $request->file('icon')->storePublicly('skills', 'cloudinary');
+            $validated['icon_path'] = Storage::disk('cloudinary')->url($uploaded);
         }
 
         $skill->update($validated);
@@ -71,10 +70,6 @@ class SkillController extends Controller
 
     public function destroy(Skill $skill): RedirectResponse
     {
-        if ($skill->icon_path) {
-            Storage::disk('public')->delete($skill->icon_path);
-        }
-
         $skill->delete();
 
         return redirect()
